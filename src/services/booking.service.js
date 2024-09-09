@@ -2,7 +2,7 @@ const axios = require('axios');
 const {StatusCodes} = require('http-status-codes');
 
 const { BookingRepository } = require('../repositories');
-const { ServerConfig } = require('../config')
+const { ServerConfig, Queue } = require('../config')
 const db = require('../models');
 const AppError = require('../utils/errors/app-error');
 const {Enums} = require('../utils/common');
@@ -55,7 +55,12 @@ async function makePayment(data) {
             throw new AppError('The user corresponding to the booking doesnt match', StatusCodes.BAD_REQUEST);
         }
         // we assume here that payment is successful
-         await bookingRepository.update(data.bookingId, {status: BOOKED}, transaction);
+        await bookingRepository.update(data.bookingId, {status: BOOKED}, transaction);
+        await Queue.sendData({
+            recepientEmail: 'soniayu2000@gmail.com',
+            subject:'Flight Booked',
+            ext: `Booking successfully done for the booking ${data.bookingId}`
+        })
         await transaction.commit();
     } catch(error) {
         await transaction.rollback();
