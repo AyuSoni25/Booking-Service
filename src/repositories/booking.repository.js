@@ -1,5 +1,5 @@
 const { Booking } = require('../models');
-const CrudRepository = require('./crud-repository');
+const CrudRepository = require('./crud.repository');
 
 const {Enums} = require('../utils/common');
 const { Op } = require('sequelize');

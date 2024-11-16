@@ -4,7 +4,7 @@ const {StatusCodes} = require('http-status-codes');
 const { BookingRepository } = require('../repositories');
 const { ServerConfig, Queue } = require('../config')
 const db = require('../models');
-const AppError = require('../utils/errors/app-error');
+const AppError = require('../utils/errors/app.error');
 const {Enums} = require('../utils/common');
 const { BOOKED, CANCELLED } = Enums.BOOKING_STATUS;
 
@@ -15,15 +15,15 @@ async function createBooking(data) {
     try {
         const flight = await axios.get(`${ServerConfig.FLIGHT_SERVICE}/api/v1/flights/${data.flightId}`);
         const flightData = flight.data.data;
-        if(data.noofSeats > flightData.totalSeats) {
+        if(data.noOfSeats > flightData.totalSeats) {
             throw new AppError('Not enough seats available', StatusCodes.BAD_REQUEST);
         }
-        const totalBillingAmount = data.noofSeats * flightData.price;
+        const totalBillingAmount = data.noOfSeats * flightData.price;
         const bookingPayload = {...data, totalCost: totalBillingAmount};
-        const booking = await bookingRepository.create(bookingPayload, transaction);
+        const booking = await bookingRepository.createBooking(bookingPayload, transaction);
 
         await axios.patch(`${ServerConfig.FLIGHT_SERVICE}/api/v1/flights/${data.flightId}/seats`, {
-            seats: data.noofSeats
+            seats: data.noOfSeats
         });
 
         await transaction.commit();
@@ -59,7 +59,7 @@ async function makePayment(data) {
         await Queue.sendData({
             recepientEmail: 'soniayu2000@gmail.com',
             subject:'Flight Booked',
-            ext: `Booking successfully done for the booking ${data.bookingId}`
+            text: `Booking successfully done for the booking ${data.bookingId}`
         })
         await transaction.commit();
     } catch(error) {
@@ -78,7 +78,7 @@ async function cancelBooking(bookingId) {
             return true;
         }
         await axios.patch(`${ServerConfig.FLIGHT_SERVICE}/api/v1/flights/${bookingDetails.flightId}/seats`, {
-            seats: bookingDetails.noofSeats,
+            seats: bookingDetails.noOfSeats,
             dec: 0
         });
         await bookingRepository.update(bookingId, {status: CANCELLED}, transaction);
